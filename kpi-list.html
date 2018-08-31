@@ -1,0 +1,211 @@
+{% extends "bsc_base.html" %}
+{% block content %}
+    <h1>{{ organization.name }}</h1>
+<div id="kpilist">
+
+<button type="button"  class="btn btn-primary"  @click="add_kpi">ADD KPI</button>
+
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>MÃ KPI</th>
+      <th>TÊN</th>
+      <th>ĐẢM NHIỆM</th>
+      <th>ĐƠN VỊ</th>
+      <th>PHƯƠNG PHÁP ĐO LƯỜNG</th>
+      <th>TOÁN TỬ</th>
+      <td>Q1</td>
+      <td>Q2</td>
+      <td>Q3</td>
+      <td>Q4</td>
+    </tr>
+  </thead>
+  <tbody  class="KPIListView">
+    <tr v-for="kpi in kpi_list">
+      <td>${ kpi.id}$</td>
+      <td>${ kpi.name}$</td>
+      <td>${ kpi.owner_email}$</td>
+      <td>${ kpi.unit}$</td>
+      <td>${ kpi.current_goal}$</td>
+      <td>${ kpi.operator}$</td>
+      <td>${ kpi.quarter_one_target}$</td>
+      <td>${ kpi.quarter_two_target}$</td>
+      <td>${ kpi.quarter_three_target}$</td>
+      <td>${ kpi.quarter_four_target}$</td>
+      <td>
+        <!-- Button trigger modal -->
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal" @click="init_modal(kpi)">
+            EditKPI
+        </button>
+
+      </td>
+        <td>
+            <button type="button"  class="btn btn-primary "  @click="remove_kpi(kpi)">Delete</button>
+        </td>
+     </tr>
+        <!-- Modal -->
+            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+            <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Edit KPI</h4>
+              </div>
+              <div class="modal-body">
+                  <form >
+                      <div class="form-group">
+                        <label>TÊN</label>
+                        <input type="text" v-model="kpiuser.name" class="form-control">
+                      </div>
+                      <div class="form-group">
+                        <label>ĐẢM NHIỆM</label>
+                        <input type="email" v-model="kpiuser.owner_email" class="form-control">
+                      </div>
+                      <div class="form-group">
+                        <label>ĐƠN VỊ</label>
+                        <input type="text" v-model="kpiuser.unit" class="form-control">
+                      </div>
+                      <div class="form-group">
+                        <label>P.P ĐO LƯỜNG</label>
+                        <input type="text" v-model="kpiuser.current_goal" class="form-control">
+                      </div>
+                      <div class="form-group">
+                        <label>TOÁN TỬ</label>
+                        <select  v-model=" kpiuser.operator" class="form-control">
+                        <option disabled value="">operator</option>
+                          <option><=</option>
+                          <option>>=</option>
+                          <option>=</option>
+                          </select><span>{{ selected }}</span>
+                      </div>
+                      <div class="form-group">
+                        <label>Q1</label>
+                        <input type="number" v-model=" kpiuser.quarter_one_target" class="form-control">
+                      </div>
+                      <div class="form-group">
+                        <label>Q2</label>
+                        <input type="number" v-model=" kpiuser.quarter_two_target" class="form-control">
+                      </div>
+                      <div class="form-group">
+                        <label>Q3</label>
+                        <input type="number" v-model=" kpiuser.quarter_three_target" class="form-control">
+                      </div>
+                      <div class="form-group">
+                        <label>Q4</label>
+                        <input type="number" v-model=" kpiuser.quarter_four_target" class="form-control">
+                      </div>
+                  </form>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" @click="save">Save changes</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" @click="close">Close</button>
+
+              </div>
+            </div>
+          </div>
+        </div>
+  </tbody>
+</table>
+</div>
+<script>
+    var kpilist = new Vue({
+        el: '#kpilist',
+        data: {
+            kpi_list: [],
+            kpiuser: {},
+            edit_kpi:{},
+            selected_kpi:null
+        },
+        created: function () {
+            this.get_list_kpi();
+        },
+        delimiters: ['${', '}$'],
+        methods: {
+            add_kpi:function(){
+                var data = {
+                    'parent_kpi': null,
+                    'new_template': true,
+                    'category' : 'financial'
+                };
+                var that = this;
+                cloudjetRequest.ajax({
+                    url: "/performance/kpi-editor/",
+                    type: 'post',
+                    data: data,
+                    success: function (response) {
+                        that.kpi_list = response
+                    },
+                    error: function () {
+                    }
+                });
+            },
+            init_modal: function (kpi) {
+                this.kpiuser = Object.assign({}, kpi);
+            },
+            remove_kpi: function(kpi){
+                var that = this;
+                data = {};
+                data['kpi_id'] = kpi.id;
+
+                cloudjetRequest.ajax({
+                    url: "{% url 'delete_kpi' %}",
+                    type: 'post',
+                    data: data,
+                    success: function (data, jqXHR, index) {
+                        that.kpi_list.splice(index,1),
+                        console.log(jqXHR)
+                    },
+                    error: function (jqXHR) {
+                        alert( jqXHR.responseJSON.message, "error");
+                    }
+                });
+            },
+            close:function(){
+                 that = this;
+                   cloudjetRequest.ajax({
+                    url: "{% url 'api_v2.users_kpi_list' user.id %}",
+                    type: 'get',
+                    success: function (response) {
+                        that.kpi_list = response;
+                    },
+                });
+            },
+
+            save: function() {
+              var that = this;
+
+            cloudjetRequest.ajax({
+                type: "POST",
+                url: '{% url 'KpiAPI'%}',
+                data: JSON.stringify(that.kpiuser),
+                success: function (data) {
+                    that.selected_kpi = Object.assign(that.selected_kpi, that.kpiuser)
+                },
+                error: function (obj) {
+                    if (callback) {
+                        callback(1);
+                    }
+                }
+            });
+
+            },
+            get_list_kpi: function () {
+                that = this;
+                cloudjetRequest.ajax({
+                    url: "{% url 'api_v2.users_kpi_list' user.id %}",
+                    type: 'get',
+                    success: function (response) {
+                        that.kpi_list = response;
+                    },
+                    error: function () {
+                        alert("Something wrong. Please try again.");
+                    }
+                });
+
+            },
+        }
+    });
+</script>
+{%  endblock %}
